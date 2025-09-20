@@ -1,0 +1,12 @@
+/* This file is mainly for Vite defaults, you can keep it minimal */
+:root {
+  line-height: 1.5;
+  font-weight: 400;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  color-scheme: light dark;
+}
+
+/* Smooth link hover globally */
+a {
+  transition: color 0.3s ease-in-out;
+}

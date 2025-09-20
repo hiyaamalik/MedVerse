@@ -1,0 +1,20 @@
+/* General reset and smooth scrolling */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  scroll-behavior: smooth;
+}
+
+/* Add a subtle global background fallback */
+body {
+  background: #0f2027;
+  color: white;
+  padding-top: 80px;
+}
