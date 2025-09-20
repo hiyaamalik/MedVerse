@@ -12,17 +12,7 @@ function Home() {
       color: "white",
       position: "relative",
       overflow: "hidden",
-    },
-    backgroundOverlay: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: "url('/hospital-bg.jpg') no-repeat center center fixed",
-      backgroundSize: "cover",
-      opacity: 0.3,
-      zIndex: 1,
+      fontFamily: "'Arial', sans-serif", // Added consistent font
     },
     container: {
       position: "relative",
@@ -33,7 +23,7 @@ function Home() {
       justifyContent: "center",
       alignItems: "center",
       padding: "20px",
-      paddingTop: "120px",
+      paddingTop: "120px", // Matches navbar height
     },
     heroSection: {
       textAlign: "center",
@@ -87,21 +77,24 @@ function Home() {
       backdropFilter: "blur(10px)",
       border: "1px solid rgba(255, 255, 255, 0.2)",
       borderRadius: "16px",
-      padding: "2rem",
+      padding: "2.5rem", // Increased padding to match other pages
       margin: "2rem auto",
-      maxWidth: "800px",
+      maxWidth: "900px", // Slightly wider to match
+      width: "90%", // Added width percentage
       boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
     },
     cardTitle: {
       fontSize: "2rem",
       fontWeight: "600",
-      marginBottom: "1rem",
+      marginBottom: "1.5rem", // Increased margin to match
       color: "#ffffff",
+      textAlign: "center", // Centered to match other pages
     },
     cardContent: {
       fontSize: "1.1rem",
       opacity: 0.9,
       lineHeight: 1.6,
+      textAlign: "center", // Centered to match
     },
     navigationLinks: {
       display: "flex",
@@ -182,8 +175,6 @@ function Home() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.backgroundOverlay}></div>
-
       {/* Floating Background Elements */}
       <div style={styles.floatingElements}>
         <div style={{ ...styles.floatingCircle, ...styles.circle1 }}></div>

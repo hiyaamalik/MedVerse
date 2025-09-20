@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import ChatbotPlaceholder from "../components/ChatbotPlaceholder";
@@ -8,15 +8,56 @@ function Department() {
 
   // Department data mapping
   const departmentData = {
-    "emergency": { name: "Emergency Department", icon: "🚑", description: "24/7 emergency care for critical conditions" },
-    "cardiology": { name: "Cardiology", icon: "❤️", description: "Heart and cardiovascular health specialists" },
-    "pediatrics": { name: "Pediatrics", icon: "👶", description: "Healthcare for children and adolescents" },
-    "neurology": { name: "Neurology", icon: "🧠", description: "Brain and nervous system specialists" },
-    "oncology": { name: "Oncology", icon: "🦠", description: "Cancer diagnosis and treatment" },
-    "orthopedics": { name: "Orthopedics", icon: "🦴", description: "Bone, joint and muscle specialists" },
+    "emergency": { 
+      name: "Emergency Department", 
+      icon: "🚑", 
+      description: "24/7 emergency care for critical conditions",
+      color: "#FF5252"
+    },
+    "cardiology": { 
+      name: "Cardiology", 
+      icon: "❤️", 
+      description: "Heart and cardiovascular health specialists",
+      color: "#FF79C6"
+    },
+    "pediatrics": { 
+      name: "Pediatrics", 
+      icon: "👶", 
+      description: "Healthcare for children and adolescents",
+      color: "#50FA7B"
+    },
+    "neurology": { 
+      name: "Neurology", 
+      icon: "🧠", 
+      description: "Brain and nervous system specialists",
+      color: "#8BE9FD"
+    },
+    "oncology": { 
+      name: "Oncology", 
+      icon: "🦠", 
+      description: "Cancer diagnosis and treatment",
+      color: "#FFB86C"
+    },
+    "orthopedics": { 
+      name: "Orthopedics", 
+      icon: "🦴", 
+      description: "Bone, joint and muscle specialists",
+      color: "#BD93F9"
+    },
+    "dentistry": { 
+      name: "Dentistry", 
+      icon: "😁", 
+      description: "Dental care and oral health specialists",
+      color: "#F1FA8C"
+    },
   };
 
-  const department = departmentData[id] || { name: `Department ${id}`, icon: "🏥", description: "Specialized medical care" };
+  const department = departmentData[id] || { 
+    name: `Department ${id}`, 
+    icon: "🏥", 
+    description: "Specialized medical care",
+    color: "#6272A4"
+  };
 
   const styles = {
     page: {
@@ -25,17 +66,7 @@ function Department() {
       color: "white",
       position: "relative",
       overflow: "hidden",
-    },
-    backgroundOverlay: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: "url('/hospital-bg.jpg') no-repeat center center fixed",
-      backgroundSize: "cover",
-      opacity: 0.3,
-      zIndex: 1,
+      fontFamily: "'Arial', sans-serif",
     },
     container: {
       position: "relative",
@@ -46,7 +77,7 @@ function Department() {
       justifyContent: "center",
       alignItems: "center",
       padding: "20px",
-      paddingTop: "120px",
+      paddingTop: "120px", // This matches the navbar height + padding
     },
     heroSection: {
       textAlign: "center",
@@ -54,7 +85,7 @@ function Department() {
       margin: "0 auto 2rem auto",
     },
     title: {
-      fontSize: "4rem",
+      fontSize: "3.5rem",
       fontWeight: "700",
       marginBottom: "1rem",
       background: "linear-gradient(45deg, #ffffff, #e0e7ff)",
@@ -69,7 +100,7 @@ function Department() {
       gap: "1rem",
     },
     departmentIcon: {
-      fontSize: "3.5rem",
+      fontSize: "3rem",
     },
     subtitle: {
       fontSize: "1.5rem",
@@ -108,6 +139,8 @@ function Department() {
       borderRadius: "12px",
       padding: "1.5rem",
       textAlign: "left",
+      transition: "all 0.3s ease",
+      borderLeft: `4px solid ${department.color}`,
     },
     infoTitle: {
       fontSize: "1.1rem",
@@ -169,10 +202,33 @@ function Department() {
       alignItems: "center",
       gap: "0.5rem",
     },
+    staffSection: {
+      marginTop: "2rem",
+      padding: "1.5rem",
+      background: "rgba(255, 255, 255, 0.05)",
+      borderRadius: "12px",
+    },
+    staffTitle: {
+      fontSize: "1.3rem",
+      fontWeight: "600",
+      marginBottom: "1rem",
+      color: "#e0e7ff",
+    },
+    staffGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+      gap: "1rem",
+    },
+    staffCard: {
+      background: "rgba(255, 255, 255, 0.03)",
+      borderRadius: "8px",
+      padding: "1rem",
+      textAlign: "center",
+    },
   };
 
   // Add floating animation styles
-  React.useEffect(() => {
+  useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
       @keyframes float {
@@ -197,8 +253,6 @@ function Department() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.backgroundOverlay}></div>
-      
       {/* Floating Background Elements */}
       <div style={styles.floatingElements}>
         <div style={{ ...styles.floatingCircle, ...styles.circle1 }}></div>
@@ -242,7 +296,7 @@ function Department() {
               <p style={styles.infoText}>
                 Monday - Friday: 8:00 AM - 6:00 PM<br />
                 Saturday: 9:00 AM - 2:00 PM<br />
-                Emergency services available 24/7
+                {id === "emergency" ? "Open 24/7" : "Emergency services available 24/7"}
               </p>
             </div>
             
@@ -253,6 +307,24 @@ function Department() {
                 Email: {id}@medverse.hospital<br />
                 Location: Main Building, Floor 3
               </p>
+            </div>
+          </div>
+          
+          <div style={styles.staffSection}>
+            <h3 style={styles.staffTitle}>Our Specialists</h3>
+            <div style={styles.staffGrid}>
+              <div style={styles.staffCard}>
+                <h4>Dr. Smith</h4>
+                <p>Senior Specialist</p>
+              </div>
+              <div style={styles.staffCard}>
+                <h4>Dr. Johnson</h4>
+                <p>Head of Department</p>
+              </div>
+              <div style={styles.staffCard}>
+                <h4>Dr. Williams</h4>
+                <p>Consultant</p>
+              </div>
             </div>
           </div>
           
