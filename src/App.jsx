@@ -4,6 +4,7 @@ import Home from "./pages/Home.jsx";
 import Reception from "./pages/Reception.jsx";
 import Modules from "./pages/Modules.jsx";
 import Department from "./pages/Department.jsx";
+import Contribute from "./pages/Contribute.jsx";
 
 function App() {
   const [showContent, setShowContent] = useState(false);
@@ -76,29 +77,29 @@ function App() {
     const runAnimation = async () => {
       // Predefined heart shape pattern that looks good from all angles
       const heartPattern = [
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,1,1,1,0,0,0,1,1,1,0,0,0],
-        [0,0,1,1,1,1,1,0,1,1,1,1,1,0,0],
-        [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-        [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-        [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-        [0,0,1,1,1,1,1,1,1,1,1,1,1,0,0],
-        [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0],
-        [0,0,0,0,1,1,1,1,1,1,1,0,0,0,0],
-        [0,0,0,0,0,1,1,1,1,1,0,0,0,0,0],
-        [0,0,0,0,0,0,1,1,1,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
       ];
 
       // Create heart dots with staggered animation
       const heartContainer = document.querySelector('.heart-container');
       const plusSign = document.querySelector('.plus-sign');
-      
+
       if (heartContainer && plusSign) {
         const dots = heartContainer.children;
         let visibleDots = [];
-        
+
         // Identify which dots should be visible (heart shape)
         for (let row = 0; row < 13; row++) {
           for (let col = 0; col < 15; col++) {
@@ -131,12 +132,12 @@ function App() {
         setTimeout(() => {
           // Phase 2: Heart beating effect
           heartContainer.classList.add('beating-heart');
-          
+
           // Phase 3: Show plus sign (on the side)
           setTimeout(() => {
             plusSign.classList.add('plus-appear');
           }, 800);
-          
+
           // Phase 4: Show text
           setTimeout(() => {
             setAnimationPhase('text');
@@ -145,7 +146,7 @@ function App() {
               textElement.classList.add('text-appear');
             }
           }, 1200);
-          
+
           // Phase 5: Start dot pulsing animation
           setTimeout(() => {
             visibleDots.forEach((item, index) => {
@@ -154,7 +155,7 @@ function App() {
               }, index * 100);
             });
           }, 1800);
-          
+
           // Phase 6: Complete animation and show main content
           setTimeout(() => {
             const introContainer = document.querySelector('.intro-container');
@@ -165,7 +166,7 @@ function App() {
               }, 1000);
             }
           }, 4000);
-          
+
         }, visibleDots.length * 40 + 500);
       }
     };
@@ -265,7 +266,7 @@ function App() {
             <div style={introStyles.plusHorizontal}></div>
           </div>
         </div>
-        <div 
+        <div
           style={{
             ...introStyles.medverseText,
             opacity: animationPhase === 'text' ? 1 : 0
@@ -285,8 +286,8 @@ function App() {
       <Route path="/department/:id" element={<Department />} />
       <Route path="/reception" element={<Reception />} />
 
-      {/* placeholder routes for contribute & contact */}
-      <Route path="/contribute" element={<h2 style={{ color: "white", textAlign: "center", marginTop: "50px" }}>Contribute Page (Coming Soon)</h2>} />
+      <Route path="/contribute" element={<Contribute />} />
+      {/* placeholder route for contact */}
       <Route path="/contact" element={<h2 style={{ color: "white", textAlign: "center", marginTop: "50px" }}>Contact Page (Coming Soon)</h2>} />
     </Routes>
   );

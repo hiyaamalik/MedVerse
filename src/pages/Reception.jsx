@@ -1,7 +1,6 @@
 import React from "react";
 import Navbar from "../components/Navbar";
-import ChatbotPlaceholder from "../components/ChatbotPlaceholder";
-// Import the image correctly
+import AgenticChatbot from "../components/AgenticChatbot";
 import nurseImage from "../assets/nurse.png";
 
 function Reception() {
@@ -12,216 +11,148 @@ function Reception() {
       color: "white",
       position: "relative",
       overflow: "hidden",
-      fontFamily: "'Arial', sans-serif",
+      fontFamily: "'Inter', system-ui, sans-serif",
+    },
+    blobs: {
+      position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
     },
     container: {
       position: "relative",
       zIndex: 2,
-      minHeight: "100vh",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: "20px",
-      paddingTop: "120px",
+      maxWidth: "1200px",
+      margin: "0 auto",
+      padding: "100px 24px 60px",
     },
-    content: {
-      maxWidth: "1000px",
-      width: "100%",
-      textAlign: "center",
-    },
-    contentWrapper: {
+    heroRow: {
       display: "flex",
-      flexDirection: "row",
-      justifyContent: "space-between",
       alignItems: "center",
-      gap: "3rem",
-      margin: "2rem 0",
+      gap: "2rem",
+      marginBottom: "2.5rem",
       flexWrap: "wrap",
     },
-    textSection: {
-      flex: 1,
-      textAlign: "left",
-      minWidth: "300px",
+    heroText: { flex: 1, minWidth: "260px" },
+    badge: {
+      display: "inline-block",
+      background: "rgba(79,70,229,0.2)",
+      border: "1px solid rgba(79,70,229,0.4)",
+      borderRadius: "50px",
+      padding: "0.35rem 1rem",
+      fontSize: "0.82rem",
+      color: "#a5b4fc",
+      marginBottom: "1rem",
+      letterSpacing: "0.06em",
+      textTransform: "uppercase",
     },
-    imageSection: {
-      flex: 1,
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      minWidth: "300px",
-    },
-    nurseImage: {
-      maxWidth: "100%",
-      height: "auto",
-      maxHeight: "400px",
-      filter: "drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3))",
-    },
-    titleSection: {
-      marginBottom: "2rem",
-    },
-    receptionTitle: {
-      fontSize: "3rem",
-      fontWeight: "700",
-      marginBottom: "0.5rem",
-      background: "linear-gradient(45deg, #ffffff, #e0e7ff)",
+    title: {
+      fontSize: "clamp(2rem, 4vw, 3.2rem)",
+      fontWeight: 800,
+      margin: "0 0 0.8rem",
+      background: "linear-gradient(135deg, #fff 0%, #c7d2fe 100%)",
       WebkitBackgroundClip: "text",
       WebkitTextFillColor: "transparent",
       backgroundClip: "text",
-      textShadow: "0 4px 20px rgba(0,0,0,0.3)",
-      letterSpacing: "0.1em",
+      lineHeight: 1.15,
     },
-    chatbotTitle: {
-      fontSize: "2.2rem",
-      fontWeight: "300",
-      marginBottom: "2rem",
-      color: "rgba(255, 255, 255, 0.9)",
-      letterSpacing: "0.05em",
+    subtitle: {
+      color: "rgba(255,255,255,0.6)",
+      fontSize: "1rem",
+      lineHeight: 1.7,
+      maxWidth: "440px",
     },
-    divider: {
-      width: "100px",
-      height: "4px",
-      background: "linear-gradient(90deg, #4f46e5, #7c3aed)",
-      margin: "2rem auto",
-      borderRadius: "2px",
-    },
-    navigationSection: {
-      margin: "2rem 0 3rem 0",
-    },
-    navLinks: {
+    nurseWrap: {
       display: "flex",
       justifyContent: "center",
-      gap: "1.5rem",
+      alignItems: "flex-end",
+    },
+    nurseImg: {
+      maxHeight: "220px",
+      width: "auto",
+      filter: "drop-shadow(0 10px 30px rgba(79,70,229,0.3))",
+    },
+    // Capabilities strip
+    capsStrip: {
+      display: "flex",
+      gap: "0.8rem",
       flexWrap: "wrap",
-    },
-    navLink: {
-      color: "rgba(255, 255, 255, 0.8)",
-      textDecoration: "none",
-      fontSize: "1.1rem",
-      fontWeight: "500",
-      padding: "0.5rem 1rem",
-      transition: "all 0.3s ease",
-      position: "relative",
-    },
-    description: {
-      fontSize: "1.2rem",
-      fontWeight: "300",
-      opacity: 0.9,
-      lineHeight: "1.6",
-      color: "rgba(255, 255, 255, 0.8)",
       marginBottom: "2rem",
-      textAlign: "left",
     },
-    chatbotSection: {
-      background: "rgba(255, 255, 255, 0.05)",
-      backdropFilter: "blur(10px)",
-      border: "1px solid rgba(255, 255, 255, 0.1)",
-      borderRadius: "12px",
-      padding: "2rem",
-      margin: "2rem 0",
-      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+    cap: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      background: "rgba(255,255,255,0.05)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: "50px",
+      padding: "0.4rem 1rem",
+      fontSize: "0.85rem",
+      color: "rgba(255,255,255,0.7)",
     },
-    floatingElements: {
-      position: "absolute",
-      width: "100%",
-      height: "100%",
-      pointerEvents: "none",
-      zIndex: 1,
+    // Chat area — full width, tall
+    chatArea: {
+      borderRadius: "20px",
+      overflow: "hidden",
+      boxShadow: "0 25px 60px rgba(0,0,0,0.4)",
+      minHeight: "580px",
+      display: "flex",
+      flexDirection: "column",
     },
-    floatingCircle: {
-      position: "absolute",
-      borderRadius: "50%",
-      background: "rgba(255, 255, 255, 0.05)",
-      animation: "float 6s ease-in-out infinite",
-    },
-    circle1: {
-      width: "80px",
-      height: "80px",
-      top: "20%",
-      left: "10%",
-      animationDelay: "0s",
-    },
-    circle2: {
-      width: "120px",
-      height: "120px",
-      top: "60%",
-      right: "15%",
-      animationDelay: "2s",
-    },
-    circle3: {
-      width: "60px",
-      height: "60px",
-      bottom: "20%",
-      left: "20%",
-      animationDelay: "4s",
+    disclaimer: {
+      textAlign: "center",
+      color: "rgba(255,255,255,0.25)",
+      fontSize: "0.76rem",
+      marginTop: "1.2rem",
     },
   };
 
-  // Add floating animation styles
-  React.useEffect(() => {
-    const style = document.createElement("style");
-    style.textContent = `
-      @keyframes float {
-        0%, 100% { transform: translateY(0px) rotate(0deg); }
-        50% { transform: translateY(-20px) rotate(180deg); }
-      }
-      
-      .nav-link::after {
-        content: '';
-        position: absolute;
-        width: 0;
-        height: 2px;
-        bottom: 0;
-        left: 50%;
-        background: linear-gradient(90deg, #4f46e5, #7c3aed);
-        transition: all 0.3s ease;
-        transform: translateX(-50%);
-      }
-      
-      .nav-link:hover::after {
-        width: 80%;
-      }
-      
-      .nav-link:hover {
-        color: white;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
-  }, []);
-
   return (
     <div style={styles.page}>
-      {/* Floating Background Elements */}
-      <div style={styles.floatingElements}>
-        <div style={{ ...styles.floatingCircle, ...styles.circle1 }}></div>
-        <div style={{ ...styles.floatingCircle, ...styles.circle2 }}></div>
-        <div style={{ ...styles.floatingCircle, ...styles.circle3 }}></div>
+      {/* Ambient blobs */}
+      <div style={styles.blobs}>
+        <div style={{ position: "absolute", width: 500, height: 500, top: -100, left: -100, borderRadius: "50%", background: "radial-gradient(circle, rgba(79,70,229,0.12) 0%, transparent 70%)", filter: "blur(60px)" }} />
+        <div style={{ position: "absolute", width: 400, height: 400, bottom: "5%", right: -80, borderRadius: "50%", background: "radial-gradient(circle, rgba(124,58,237,0.1) 0%, transparent 70%)", filter: "blur(60px)" }} />
       </div>
 
       <Navbar />
 
       <div style={styles.container}>
-        <div style={styles.content}>
-          <div style={styles.titleSection}>
-            <h1 style={styles.receptionTitle}>RECEPTION</h1>
-            <h2 style={styles.chatbotTitle}>AGENTIC CHATBOT</h2>
-            <div style={styles.divider}></div>
+        {/* Hero row */}
+        <div style={styles.heroRow}>
+          <div style={styles.heroText}>
+            <div style={styles.badge}>🏥 Virtual Reception</div>
+            <h1 style={styles.title}>MedBot — Your AI<br />Medical Receptionist</h1>
+            <p style={styles.subtitle}>
+              Describe your symptoms, set reminders, book tests, or get routed to the
+              right specialist — all through a single conversation.
+            </p>
           </div>
-          {/* Correct layout: both chatbot and image in a row */}
-          <div style={styles.contentWrapper}>
-            <div style={styles.chatbotSection}>
-              <ChatbotPlaceholder label="Agentic Chatbot Interface" />
-            </div>
-            <div style={styles.imageSection}>
-              <img
-                src={nurseImage}
-                alt="Friendly Nurse"
-                style={styles.nurseImage}
-              />
-            </div>
+          <div style={styles.nurseWrap}>
+            <img src={nurseImage} alt="MedVerse Virtual Nurse" style={styles.nurseImg} />
           </div>
         </div>
+
+        {/* Capability chips */}
+        <div style={styles.capsStrip}>
+          {[
+            { icon: "🏥", label: "Route to 7 Departments" },
+            { icon: "💊", label: "Medicine Reminders" },
+            { icon: "🧪", label: "Test Booking" },
+            { icon: "❓", label: "Medical Q&A" },
+            { icon: "⚡", label: "Powered by Groq LLM" },
+          ].map(c => (
+            <div key={c.label} style={styles.cap}>
+              <span>{c.icon}</span> {c.label}
+            </div>
+          ))}
+        </div>
+
+        {/* The chatbot — fills remaining width */}
+        <div style={styles.chatArea}>
+          <AgenticChatbot />
+        </div>
+
+        <p style={styles.disclaimer}>
+          ⚠️ MedBot is an AI assistant for demonstration purposes. It is not a substitute for professional medical advice.
+        </p>
       </div>
     </div>
   );
