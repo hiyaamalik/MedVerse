@@ -37,6 +37,7 @@ const TOOLS = [
                     time: { type: "string", description: "Time for the reminder e.g. '8:00 AM'" },
                     frequency: { type: "string", description: "How often e.g. 'daily', 'twice daily', 'every Monday'" },
                     note: { type: "string", description: "Additional note or dosage instructions" },
+                    phone_number: { type: "string", description: "Patient's 10-digit mobile number for SMS reminders" },
                 },
                 required: ["reminder_type", "name", "time", "frequency"],
             },
@@ -62,27 +63,20 @@ const TOOLS = [
     },
 ];
 
-const buildSystemPrompt = () => `You are MedBot, the intelligent virtual reception assistant for MedVerse Hospital. You are warm, professional, and empathetic.
+const buildSystemPrompt = () => `You are the MedVerse Professional Patient Care Coordinator (MedBot). Your tone is highly professional, empathetic, and efficient. 
 
-Available departments: Emergency, Cardiology, Pediatrics, Neurology, Oncology, Orthopedics, Dentistry.
+Key Responsibilities:
+1. Clinical Navigation: Direct patients to the appropriate department (Emergency, Cardiology, Pediatrics, Neurology, Oncology, Orthopedics, Dentistry) based on clinical presentation.
+2. Clinical Reminders: Facilitate medication and test adherence through SMS reminders. (Always solicit a 10-digit mobile number for this service).
+3. Diagnostic Scheduling: Assist in booking diagnostic tests via our partner, 1mg.
 
-Your 3 superpowers (ALWAYS use tools to act, never just describe what you'd do):
-1. navigate_to_department — Direct patients to the right department based on symptoms
-2. set_reminder — Set medicine or test reminders. Before calling this tool ALWAYS ask the patient for their 10-digit mobile number so an SMS confirmation can be sent (if they decline, proceed without it).
-3. book_test — Schedule diagnostic tests or appointments. This will open 1mg's test booking page for them.
+Communication Rules:
+- Communicate using structured formatting (bullet points, clear headings).
+- Use professional terminology (e.g., "Clinical presentation" instead of "Issue").
+- Always include a brief disclaimer that you are an AI coordinator and clinical decisions require a physician's consultation.
+- Keep responses concise and focused on actionable outcomes.
 
-Symptom routing guide:
-- Chest pain, heart palpitations, high blood pressure → Cardiology
-- Life-threatening / severe / trauma / difficulty breathing → Emergency  
-- Children under 18 → Pediatrics
-- Headaches, seizures, dizziness, numbness, memory loss → Neurology
-- Cancer, tumors, unexplained weight loss → Oncology
-- Bone, joint, muscle, sports injuries → Orthopedics
-- Teeth, gums, mouth pain → Dentistry
-
-Today: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
-
-Keep replies concise (2–4 sentences). Always use tools to take real action. Remind patients you're an AI and real medical decisions need a doctor.`;
+Today's Date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
 
 const SUGGESTIONS = [
     "I have chest pain and shortness of breath",
@@ -93,8 +87,44 @@ const SUGGESTIONS = [
     "I have a severe toothache",
 ];
 
+// ─── Error Boundary Component ─────────────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.error("Error caught in boundary:", error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={errorBoundaryStyle}>
+                    <h3 style={{ color: "#fca5a5", marginBottom: "1rem" }}>⚠️ Something went wrong</h3>
+                    <p style={{ color: "rgba(255,255,255,0.7)", marginBottom: "1.5rem" }}>
+                        {this.state.error?.message || "The application encountered an error"}
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        style={refreshButtonStyle}
+                    >
+                        Refresh Application
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function AgenticChatbot() {
+function AgenticChatbotContent() {
     const navigate = useNavigate();
 
     // API Key state — reads from env or localStorage
@@ -116,7 +146,11 @@ export default function AgenticChatbot() {
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        try {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        } catch (e) {
+            console.error("Scroll error", e);
+        }
     }, [messages, pendingActions, isLoading]);
 
     // ── Key setup ──────────────────────────────────────────────────────────────
@@ -130,56 +164,91 @@ export default function AgenticChatbot() {
 
     // ── Tool execution ─────────────────────────────────────────────────────────
     const executeToolCall = (toolName, args) => {
-        if (toolName === "navigate_to_department") {
-            const action = { id: Date.now(), type: "navigate", dept: args.department, reason: args.reason };
-            setPendingActions(prev => [...prev, action]);
-            setTimeout(() => navigate(`/department/${args.department}`), 2500);
-            return `Navigating to ${args.department} department now.`;
-        }
+        try {
+            if (toolName === "navigate_to_department") {
+                const action = {
+                    id: Date.now(),
+                    type: "navigate",
+                    dept: String(args.department || ""),
+                    reason: String(args.reason || "")
+                };
+                setPendingActions(prev => [...prev, action]);
 
-        if (toolName === "set_reminder") {
-            const reminders = JSON.parse(localStorage.getItem("medverse_reminders") || "[]");
-            reminders.push({ id: Date.now(), ...args, createdAt: new Date().toISOString() });
-            localStorage.setItem("medverse_reminders", JSON.stringify(reminders));
-            const action = { id: Date.now(), type: "reminder", ...args };
-            setPendingActions(prev => [...prev, action]);
+                // Navigate after delay
+                setTimeout(() => {
+                    try {
+                        navigate(`/department/${args.department}`);
+                    } catch (navError) {
+                        console.error("Navigation error:", navError);
+                    }
+                }, 2500);
 
-            // ── SMS via Fast2SMS (if phone number provided & API key set) ─────
-            const smsKey = typeof import.meta !== "undefined" ? (import.meta.env?.VITE_FAST2SMS_KEY || "") : "";
-            if (args.phone_number && smsKey) {
-                const smsMessage = `MedVerse Reminder: ${args.reminder_type === "medicine" ? "💊" : "🧪"} ${args.name} at ${args.time} (${args.frequency}).${args.note ? " Note: " + args.note : ""} - MedVerse Hospital`;
-                fetch(`${FAST2SMS_URL}?authorization=${smsKey}&sender_id=MEDVRS&message=${encodeURIComponent(smsMessage)}&language=english&route=q&numbers=${args.phone_number}`, {
-                    method: "GET",
-                }).catch(() => { }); // fire-and-forget, fail silently
+                return `Clinical coordination initialized. Directing to ${args.department}.`;
             }
 
-            return `Reminder saved: ${args.name} at ${args.time}, ${args.frequency}.${args.phone_number ? " SMS sent to " + args.phone_number + "." : ""}`;
+            if (toolName === "set_reminder") {
+                try {
+                    const reminders = JSON.parse(localStorage.getItem("medverse_reminders") || "[]");
+                    reminders.push({ id: Date.now(), ...args, createdAt: new Date().toISOString() });
+                    localStorage.setItem("medverse_reminders", JSON.stringify(reminders));
+                } catch (e) {
+                    console.error("Storage error", e);
+                }
+
+                const action = { id: Date.now(), type: "reminder", ...args };
+                setPendingActions(prev => [...prev, action]);
+
+                // ── SMS via Fast2SMS ─────
+                const smsKey = typeof import.meta !== "undefined" ? (import.meta.env?.VITE_FAST2SMS_KEY || "") : "";
+                if (args.phone_number && smsKey) {
+                    const smsMessage = `MedVerse Reminder: ${args.reminder_type === "medicine" ? "💊" : "🧪"} ${args.name} at ${args.time} (${args.frequency}). - MedVerse`;
+
+                    fetch(`${FAST2SMS_URL}?authorization=${smsKey}&sender_id=MEDVRS&message=${encodeURIComponent(smsMessage)}&language=english&route=q&numbers=${args.phone_number}`, {
+                        method: "GET",
+                    }).catch(err => console.error("SMS error:", err));
+                }
+
+                return `Confirmed: Reminder set for ${args.name} at ${args.time}. Status: Logged.`;
+            }
+
+            if (toolName === "book_test") {
+                try {
+                    const bookings = JSON.parse(localStorage.getItem("medverse_bookings") || "[]");
+                    bookings.push({
+                        id: Date.now(),
+                        ...args,
+                        status: "confirmed",
+                        createdAt: new Date().toISOString()
+                    });
+                    localStorage.setItem("medverse_bookings", JSON.stringify(bookings));
+                } catch (e) {
+                    console.error("Storage error", e);
+                }
+
+                // Make sure to include the URL in the action
+                const action = {
+                    id: Date.now(),
+                    type: "booking",
+                    ...args,
+                    url: ONEMG_SEARCH  // Explicitly set the URL here
+                };
+                setPendingActions(prev => [...prev, action]);
+
+                return `I have prepared the diagnostic request for ${args.test_name}. Please use the button below to finalize at 1mg.`;
+            }
+
+            return "Action processed.";
+        } catch (err) {
+            console.error("Tool execution failed", err);
+            return `System action partially successful. Error: ${err.message}`;
         }
-
-        if (toolName === "book_test") {
-            const bookings = JSON.parse(localStorage.getItem("medverse_bookings") || "[]");
-            bookings.push({ id: Date.now(), ...args, status: "confirmed", createdAt: new Date().toISOString() });
-            localStorage.setItem("medverse_bookings", JSON.stringify(bookings));
-            const action = { id: Date.now(), type: "booking", ...args };
-            setPendingActions(prev => [...prev, action]);
-
-            // ── Open 1mg labs page — new tab, current tab untouched ──────────
-            // requestAnimationFrame defers until after React's render cycle,
-            // so the page never flashes white before the tab opens.
-            requestAnimationFrame(() => {
-                window.open(ONEMG_SEARCH, "_blank", "noopener,noreferrer");
-            });
-
-            return `Booked: ${args.test_name} on ${args.suggested_date} at ${args.suggested_time}. Opening 1mg booking page.`;
-        }
-
-        return "Action executed.";
     };
 
     // ── Send message ───────────────────────────────────────────────────────────
     const sendMessage = async (text) => {
         const userText = (text || input).trim();
         if (!userText || isLoading) return;
+
         setInput("");
         setPendingActions([]);
 
@@ -196,7 +265,10 @@ export default function AgenticChatbot() {
             // Round 1 — with tools
             const res1 = await fetch(GROQ_API_URL, {
                 method: "POST",
-                headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json"
+                },
                 body: JSON.stringify({
                     model: GROQ_MODEL,
                     messages: [{ role: "system", content: buildSystemPrompt() }, ...apiHistory],
@@ -217,43 +289,81 @@ export default function AgenticChatbot() {
 
             // If tool calls, execute them and do round 2
             if (assistantMsg.tool_calls?.length) {
-                const toolResults = [];
+                const results = [];
                 for (const tc of assistantMsg.tool_calls) {
-                    const args = JSON.parse(tc.function.arguments);
-                    const result = executeToolCall(tc.function.name, args);
-                    toolResults.push({ role: "tool", tool_call_id: tc.id, content: result });
+                    try {
+                        const args = JSON.parse(tc.function.arguments || "{}");
+                        const res = executeToolCall(tc.function.name, args);
+                        results.push({
+                            role: "tool",
+                            tool_call_id: tc.id,
+                            content: String(res)
+                        });
+                    } catch (e) {
+                        console.error("Tool execution error:", e);
+                        results.push({
+                            role: "tool",
+                            tool_call_id: tc.id,
+                            content: "Error executing action."
+                        });
+                    }
                 }
 
-                // Round 2 — get final human-readable reply
                 const res2 = await fetch(GROQ_API_URL, {
                     method: "POST",
-                    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+                    headers: {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "Content-Type": "application/json"
+                    },
                     body: JSON.stringify({
                         model: GROQ_MODEL,
                         messages: [
                             { role: "system", content: buildSystemPrompt() },
                             ...apiHistory,
                             assistantMsg,
-                            ...toolResults,
+                            ...results
                         ],
                         temperature: 0.6,
                         max_tokens: 500,
                     }),
                 });
-                const data2 = await res2.json();
-                const finalText = data2.choices[0]?.message?.content || assistantMsg.content || "";
-                setMessages(prev => [...prev, { role: "assistant", content: finalText, id: Date.now() }]);
+
+                if (res2.ok) {
+                    const data2 = await res2.json();
+                    const finalText = data2.choices?.[0]?.message?.content || assistantMsg.content || "Action confirmed.";
+                    setMessages(prev => [...prev, {
+                        role: "assistant",
+                        content: String(finalText),
+                        id: Date.now()
+                    }]);
+                } else {
+                    setMessages(prev => [...prev, {
+                        role: "assistant",
+                        content: "Action completed successfully, but I was unable to generate a summary. How else can I assist?",
+                        id: Date.now()
+                    }]);
+                }
             } else {
-                setMessages(prev => [...prev, { role: "assistant", content: assistantMsg.content, id: Date.now() }]);
+                setMessages(prev => [...prev, {
+                    role: "assistant",
+                    content: String(assistantMsg.content || ""),
+                    id: Date.now()
+                }]);
             }
         } catch (err) {
+            console.error("API Error:", err);
             setMessages(prev => [
                 ...prev,
-                { role: "assistant", content: `⚠️ **Error:** ${err.message}\n\nPlease make sure your Groq API key is valid.`, id: Date.now(), isError: true },
+                {
+                    role: "assistant",
+                    content: `⚠️ **Error:** ${err.message}\n\nPlease make sure your Groq API key is valid.`,
+                    id: Date.now(),
+                    isError: true
+                },
             ]);
+        } finally {
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
     };
 
     // ── Render ─────────────────────────────────────────────────────────────────
@@ -295,7 +405,12 @@ export default function AgenticChatbot() {
                 </div>
                 <button
                     style={resetKeyBtn}
-                    onClick={() => { localStorage.removeItem("medverse_groq_key"); setApiKey(""); setKeySet(false); setKeyInput(""); }}
+                    onClick={() => {
+                        localStorage.removeItem("medverse_groq_key");
+                        setApiKey("");
+                        setKeySet(false);
+                        setKeyInput("");
+                    }}
                     title="Change API key"
                 >⚙️</button>
             </div>
@@ -313,9 +428,26 @@ export default function AgenticChatbot() {
 
                 {/* Typing indicator */}
                 {isLoading && (
-                    <div style={{ ...bubbleBase, ...assistantBubble, display: "inline-flex", gap: "5px", padding: "12px 16px", alignItems: "center" }}>
+                    <div style={{
+                        ...bubbleBase,
+                        ...assistantBubble,
+                        display: "inline-flex",
+                        gap: "5px",
+                        padding: "12px 16px",
+                        alignItems: "center"
+                    }}>
                         {[0, 1, 2].map(i => (
-                            <span key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: "#818cf8", display: "block", animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+                            <span
+                                key={i}
+                                style={{
+                                    width: 7,
+                                    height: 7,
+                                    borderRadius: "50%",
+                                    background: "#818cf8",
+                                    display: "block",
+                                    animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`
+                                }}
+                            />
                         ))}
                     </div>
                 )}
@@ -329,7 +461,13 @@ export default function AgenticChatbot() {
                     <p style={suggestionLabel}>Quick starts:</p>
                     <div style={chipsRow}>
                         {SUGGESTIONS.map(s => (
-                            <button key={s} style={chip} onClick={() => sendMessage(s)}>{s}</button>
+                            <button
+                                key={s}
+                                style={chip}
+                                onClick={() => sendMessage(s)}
+                            >
+                                {s}
+                            </button>
                         ))}
                     </div>
                 </div>
@@ -346,7 +484,10 @@ export default function AgenticChatbot() {
                     disabled={isLoading}
                 />
                 <button
-                    style={{ ...sendBtn, opacity: (!input.trim() || isLoading) ? 0.4 : 1 }}
+                    style={{
+                        ...sendBtn,
+                        opacity: (!input.trim() || isLoading) ? 0.4 : 1
+                    }}
                     onClick={() => sendMessage()}
                     disabled={!input.trim() || isLoading}
                 >
@@ -355,15 +496,15 @@ export default function AgenticChatbot() {
             </div>
 
             <style>{`
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); opacity: 0.4; }
-          50% { transform: translateY(-5px); opacity: 1; }
-        }
-        @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+                @keyframes bounce {
+                    0%, 100% { transform: translateY(0); opacity: 0.4; }
+                    50% { transform: translateY(-5px); opacity: 1; }
+                }
+                @keyframes fadeSlideIn {
+                    from { opacity: 0; transform: translateY(8px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
         </div>
     );
 }
@@ -371,22 +512,42 @@ export default function AgenticChatbot() {
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 function MessageBubble({ msg }) {
     const isUser = msg.role === "user";
-    // Simple markdown-lite: bold, bullet points
+
     const renderContent = (text) => {
-        const lines = text.split("\n").map((line, i) => {
-            const formatted = line
+        if (!text || typeof text !== "string") return null;
+
+        return text.split("\n").map((line, i) => {
+            if (!line && i === 0) return null;
+            let formatted = line
                 .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                .replace(/^• /, "• ")
-                .replace(/^\* /, "• ");
-            return <div key={i} dangerouslySetInnerHTML={{ __html: formatted || "&nbsp;" }} />;
+                .replace(/^# (.*)/, "<h3>$1</h3>")
+                .replace(/^## (.*)/, "<h4>$1</h4>");
+
+            if (line.trim().startsWith("- ") || line.trim().startsWith("* ") || line.trim().startsWith("• ")) {
+                formatted = "• " + line.trim().substring(2);
+            }
+
+            return <div
+                key={i}
+                style={{ marginBottom: line ? "0.3rem" : "0.8rem" }}
+                dangerouslySetInnerHTML={{ __html: formatted || "&nbsp;" }}
+            />;
         });
-        return lines;
     };
 
     return (
-        <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", animation: "fadeSlideIn 0.3s ease-out", marginBottom: "2px" }}>
+        <div style={{
+            display: "flex",
+            justifyContent: isUser ? "flex-end" : "flex-start",
+            animation: "fadeSlideIn 0.3s ease-out",
+            marginBottom: "2px"
+        }}>
             {!isUser && <div style={botAvatarSmall}>🤖</div>}
-            <div style={{ ...bubbleBase, ...(isUser ? userBubble : assistantBubble), ...(msg.isError ? errorBubble : {}) }}>
+            <div style={{
+                ...bubbleBase,
+                ...(isUser ? userBubble : assistantBubble),
+                ...(msg.isError ? errorBubble : {})
+            }}>
                 {renderContent(msg.content)}
             </div>
         </div>
@@ -397,36 +558,95 @@ function MessageBubble({ msg }) {
 function ActionCard({ action }) {
     const configs = {
         navigate: {
-            icon: "🏥", color: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)",
-            title: `Navigating to ${action.dept.charAt(0).toUpperCase() + action.dept.slice(1)}`,
-            body: action.reason, label: "Opening department page in 2s..."
+            icon: "🏥",
+            color: "#10b981",
+            bg: "rgba(16,185,129,0.1)",
+            border: "rgba(16,185,129,0.3)",
+            title: `Navigating to ${action.dept ? action.dept.charAt(0).toUpperCase() + action.dept.slice(1) : 'Department'}`,
+            body: action.reason,
+            label: "Redirecting in 2.5s..."
         },
         reminder: {
             icon: action.reminder_type === "medicine" ? "💊" : "🧪",
-            color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.3)",
-            title: `${action.reminder_type === "medicine" ? "Medicine" : "Test"} Reminder Set`,
-            body: `${action.name} — ${action.time} (${action.frequency})${action.note ? "\n📋 " + action.note : ""}`,
-            label: "Saved to your reminders ✓"
+            color: "#818cf8",
+            bg: "rgba(129,140,248,0.1)",
+            border: "rgba(129,140,248,0.3)",
+            title: `${action.reminder_type === "medicine" ? "Clinical" : "Diagnostic"} Reminder Set`,
+            body: `Package: ${action.name}\nSchedule: ${action.time} (${action.frequency})${action.note ? "\nNotes: " + action.note : ""}`,
+            label: "Successfully logged to system ✓",
         },
         booking: {
-            icon: "📅", color: "#f59e0b", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)",
-            title: `Test Booked: ${action.test_name}`,
-            body: `📆 ${action.suggested_date} at ${action.suggested_time}\n🏥 ${action.department}${action.preparation ? "\n⚠️ " + action.preparation : ""}`,
-            label: "Booking confirmed ✓"
+            icon: "📅",
+            color: "#f59e0b",
+            bg: "rgba(245,158,11,0.1)",
+            border: "rgba(245,158,11,0.3)",
+            title: `Diagnostic Request: ${action.test_name || 'Medical Test'}`,
+            body: `Preferred: ${action.suggested_date || 'ASAP'} @ ${action.suggested_time || 'Flexible'}\nDept: ${action.department || 'General'}${action.preparation ? "\nPrep: " + action.preparation : ""}`,
+            label: "Click below to finalize booking",
+            url: action.url || ONEMG_SEARCH,
+            isBooking: true
         },
     };
+
     const c = configs[action.type];
     if (!c) return null;
 
+    // Handle booking button click - prevent event bubbling and ensure new tab opens
+    const handleBookingClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const bookingUrl = action.url || ONEMG_SEARCH;
+
+        // Open in new tab with proper parameters
+        const newWindow = window.open(bookingUrl, '_blank', 'noopener,noreferrer');
+
+        // Fallback if popup blocker prevents opening
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+            // Create a temporary anchor element as fallback
+            const link = document.createElement('a');
+            link.href = bookingUrl;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.click();
+        }
+    };
+
     return (
-        <div style={{ animation: "fadeSlideIn 0.35s ease-out", marginBottom: "2px" }}>
+        <div style={{ animation: "fadeSlideIn 0.35s ease-out", marginBottom: "8px" }}>
             <div style={{ ...actionCard, background: c.bg, borderColor: c.border }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
                     <span style={{ fontSize: "1.2rem" }}>{c.icon}</span>
-                    <span style={{ color: c.color, fontWeight: 700, fontSize: "0.95rem" }}>{c.title}</span>
+                    <span style={{ color: c.color, fontWeight: 700, fontSize: "0.95rem", textTransform: "uppercase", letterSpacing: "0.02em" }}>{c.title}</span>
                 </div>
                 <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.88rem", lineHeight: 1.6, whiteSpace: "pre-line" }}>{c.body}</div>
-                <div style={{ color: c.color, fontSize: "0.8rem", marginTop: "0.6rem", fontWeight: 500 }}>{c.label}</div>
+                <div style={{ color: c.color, fontSize: "0.8rem", marginTop: "0.8rem", fontWeight: 600, borderTop: `1px solid ${c.border}`, paddingTop: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>{c.label}</span>
+                    {c.isBooking && (
+                        <button
+                            type="button"
+                            onClick={handleBookingClick}
+                            style={{
+                                background: c.color,
+                                color: "#000",
+                                border: "none",
+                                padding: "8px 16px",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                fontSize: "0.75rem",
+                                fontWeight: 800,
+                                transition: "all 0.2s",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px"
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.filter = "brightness(1.1)"}
+                            onMouseOut={(e) => e.currentTarget.style.filter = "none"}
+                        >
+                            FINALIZE ON 1MG ↗
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -434,48 +654,275 @@ function ActionCard({ action }) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const chatWrap = {
-    display: "flex", flexDirection: "column", height: "100%", minHeight: "520px",
-    background: "rgba(10,10,30,0.6)", borderRadius: "16px",
-    border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(12px)",
-    overflow: "hidden", fontFamily: "Inter, system-ui, sans-serif",
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
+    minHeight: "520px",
+    background: "rgba(10,10,30,0.6)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255,255,255,0.08)",
+    backdropFilter: "blur(12px)",
+    overflow: "hidden",
+    fontFamily: "Inter, system-ui, sans-serif",
 };
 
 // Header
 const chatHeader = {
-    display: "flex", alignItems: "center", gap: "0.8rem",
-    padding: "14px 18px", background: "rgba(79,70,229,0.15)",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.8rem",
+    padding: "14px 18px",
+    background: "rgba(79,70,229,0.15)",
     borderBottom: "1px solid rgba(255,255,255,0.07)",
 };
-const botAvatar = { width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg,#4f46e5,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 };
-const botAvatarSmall = { width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#4f46e5,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.9rem", marginRight: "8px", flexShrink: 0, alignSelf: "flex-end" };
-const botName = { color: "#fff", fontWeight: 700, fontSize: "0.95rem" };
-const botStatus = { color: "rgba(255,255,255,0.5)", fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "5px", marginTop: "2px" };
-const statusDot = { width: 7, height: 7, borderRadius: "50%", background: "#10b981", display: "inline-block", boxShadow: "0 0 6px #10b981" };
-const resetKeyBtn = { marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontSize: "1.1rem", opacity: 0.6 };
+
+const botAvatar = {
+    width: 38,
+    height: 38,
+    borderRadius: "50%",
+    background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "1.2rem",
+    flexShrink: 0
+};
+
+const botAvatarSmall = {
+    width: 30,
+    height: 30,
+    borderRadius: "50%",
+    background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "0.9rem",
+    marginRight: "8px",
+    flexShrink: 0,
+    alignSelf: "flex-end"
+};
+
+const botName = {
+    color: "#fff",
+    fontWeight: 700,
+    fontSize: "0.95rem"
+};
+
+const botStatus = {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: "0.78rem",
+    display: "flex",
+    alignItems: "center",
+    gap: "5px",
+    marginTop: "2px"
+};
+
+const statusDot = {
+    width: 7,
+    height: 7,
+    borderRadius: "50%",
+    background: "#10b981",
+    display: "inline-block",
+    boxShadow: "0 0 6px #10b981"
+};
+
+const resetKeyBtn = {
+    marginLeft: "auto",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "1.1rem",
+    opacity: 0.6
+};
 
 // Messages
-const messagesWrap = { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "8px", scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" };
-const bubbleBase = { maxWidth: "78%", padding: "10px 14px", borderRadius: "14px", fontSize: "0.92rem", lineHeight: 1.6 };
-const userBubble = { background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "#fff", borderBottomRightRadius: 4 };
-const assistantBubble = { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.9)", border: "1px solid rgba(255,255,255,0.08)", borderBottomLeftRadius: 4 };
-const errorBubble = { background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" };
+const messagesWrap = {
+    flex: 1,
+    overflowY: "auto",
+    padding: "16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    scrollbarWidth: "thin",
+    scrollbarColor: "rgba(255,255,255,0.1) transparent"
+};
+
+const bubbleBase = {
+    maxWidth: "78%",
+    padding: "10px 14px",
+    borderRadius: "14px",
+    fontSize: "0.92rem",
+    lineHeight: 1.6
+};
+
+const userBubble = {
+    background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+    color: "#fff",
+    borderBottomRightRadius: 4
+};
+
+const assistantBubble = {
+    background: "rgba(255,255,255,0.06)",
+    color: "rgba(255,255,255,0.9)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderBottomLeftRadius: 4
+};
+
+const errorBubble = {
+    background: "rgba(239,68,68,0.1)",
+    border: "1px solid rgba(239,68,68,0.3)",
+    color: "#fca5a5"
+};
 
 // Action card
-const actionCard = { border: "1px solid", borderRadius: "12px", padding: "12px 14px", marginLeft: "38px" };
+const actionCard = {
+    border: "1px solid",
+    borderRadius: "12px",
+    padding: "12px 14px",
+    marginLeft: "38px"
+};
 
 // Suggestions
-const suggestionWrap = { padding: "0 14px 12px", borderTop: "1px solid rgba(255,255,255,0.05)" };
-const suggestionLabel = { color: "rgba(255,255,255,0.35)", fontSize: "0.75rem", margin: "10px 0 6px", textTransform: "uppercase", letterSpacing: "0.08em" };
-const chipsRow = { display: "flex", flexWrap: "wrap", gap: "6px" };
-const chip = { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "20px", color: "rgba(255,255,255,0.65)", padding: "5px 12px", fontSize: "0.8rem", cursor: "pointer", transition: "all 0.2s", fontFamily: "inherit" };
+const suggestionWrap = {
+    padding: "0 14px 12px",
+    borderTop: "1px solid rgba(255,255,255,0.05)"
+};
+
+const suggestionLabel = {
+    color: "rgba(255,255,255,0.35)",
+    fontSize: "0.75rem",
+    margin: "10px 0 6px",
+    textTransform: "uppercase",
+    letterSpacing: "0.08em"
+};
+
+const chipsRow = {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "6px"
+};
+
+const chip = {
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "20px",
+    color: "rgba(255,255,255,0.65)",
+    padding: "5px 12px",
+    fontSize: "0.8rem",
+    cursor: "pointer",
+    transition: "all 0.2s",
+    fontFamily: "inherit"
+};
 
 // Input
-const inputBar = { display: "flex", gap: "8px", padding: "12px 14px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.2)" };
-const inputField = { flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "24px", padding: "10px 16px", color: "#fff", fontSize: "0.92rem", outline: "none", fontFamily: "inherit" };
-const sendBtn = { background: "linear-gradient(135deg,#4f46e5,#7c3aed)", border: "none", borderRadius: "50%", width: 42, height: 42, color: "#fff", fontSize: "1rem", cursor: "pointer", flexShrink: 0, transition: "opacity 0.2s" };
+const inputBar = {
+    display: "flex",
+    gap: "8px",
+    padding: "12px 14px",
+    borderTop: "1px solid rgba(255,255,255,0.06)",
+    background: "rgba(0,0,0,0.2)"
+};
+
+const inputField = {
+    flex: 1,
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "24px",
+    padding: "10px 16px",
+    color: "#fff",
+    fontSize: "0.92rem",
+    outline: "none",
+    fontFamily: "inherit"
+};
+
+const sendBtn = {
+    background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+    border: "none",
+    borderRadius: "50%",
+    width: 42,
+    height: 42,
+    color: "#fff",
+    fontSize: "1rem",
+    cursor: "pointer",
+    flexShrink: 0,
+    transition: "opacity 0.2s"
+};
 
 // Key gate
-const keyGateWrap = { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "420px", background: "rgba(10,10,30,0.5)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)" };
-const keyGateBox = { textAlign: "center", padding: "2.5rem", maxWidth: "360px" };
-const keyInput_style = { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "10px", padding: "10px 14px", color: "#fff", fontSize: "0.95rem", outline: "none", boxSizing: "border-box", marginBottom: "1rem", fontFamily: "monospace" };
-const activateBtn = { background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "#fff", border: "none", borderRadius: "24px", padding: "10px 24px", fontSize: "1rem", fontWeight: 600, cursor: "pointer", width: "100%" };
+const keyGateWrap = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "420px",
+    background: "rgba(10,10,30,0.5)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255,255,255,0.08)"
+};
+
+const keyGateBox = {
+    textAlign: "center",
+    padding: "2.5rem",
+    maxWidth: "360px"
+};
+
+const keyInput_style = {
+    width: "100%",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    color: "#fff",
+    fontSize: "0.95rem",
+    outline: "none",
+    boxSizing: "border-box",
+    marginBottom: "1rem",
+    fontFamily: "monospace"
+};
+
+const activateBtn = {
+    background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+    color: "#fff",
+    border: "none",
+    borderRadius: "24px",
+    padding: "10px 24px",
+    fontSize: "1rem",
+    fontWeight: 600,
+    cursor: "pointer",
+    width: "100%"
+};
+
+// Error boundary styles
+const errorBoundaryStyle = {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "520px",
+    padding: "2rem",
+    textAlign: "center",
+    background: "rgba(10,10,30,0.6)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255,255,255,0.08)",
+    backdropFilter: "blur(12px)",
+    fontFamily: "Inter, system-ui, sans-serif",
+};
+
+const refreshButtonStyle = {
+    background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+    color: "#fff",
+    border: "none",
+    borderRadius: "24px",
+    padding: "10px 24px",
+    fontSize: "1rem",
+    fontWeight: 600,
+    cursor: "pointer",
+};
+
+// ─── Export with Error Boundary ───────────────────────────────────────────────
+export default function AgenticChatbot() {
+    return (
+        <ErrorBoundary>
+            <AgenticChatbotContent />
+        </ErrorBoundary>
+    );
+}
