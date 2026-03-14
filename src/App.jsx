@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Home from "./pages/Home.jsx";
 import Reception from "./pages/Reception.jsx";
 import Modules from "./pages/Modules.jsx";
@@ -7,7 +7,9 @@ import Department from "./pages/Department.jsx";
 import Contribute from "./pages/Contribute.jsx";
 
 function App() {
-  const [showContent, setShowContent] = useState(false);
+  const location = useLocation();
+  // Animation should only run on the first load of the root page
+  const [showContent, setShowContent] = useState(() => window.location.pathname !== "/");
   const [animationPhase, setAnimationPhase] = useState('dots');
 
   useEffect(() => {
@@ -74,6 +76,11 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // If we're already showing content, skip the animation logic
+    if (window.location.pathname !== "/") {
+      setShowContent(true);
+      return;
+    }
     const runAnimation = async () => {
       // Predefined heart shape pattern that looks good from all angles
       const heartPattern = [

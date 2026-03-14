@@ -1,60 +1,60 @@
 import React, { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import ChatbotPlaceholder from "../components/ChatbotPlaceholder";
+import MultimodalDoctor from "../components/MultimodalDoctor";
 
 function Department() {
   const { id } = useParams();
 
   // Department data mapping
   const departmentData = {
-    "emergency": { 
-      name: "Emergency Department", 
-      icon: "🚑", 
+    "emergency": {
+      name: "Emergency Department",
+      icon: "🚑",
       description: "24/7 emergency care for critical conditions",
       color: "#FF5252"
     },
-    "cardiology": { 
-      name: "Cardiology", 
-      icon: "❤️", 
+    "cardiology": {
+      name: "Cardiology",
+      icon: "❤️",
       description: "Heart and cardiovascular health specialists",
       color: "#FF79C6"
     },
-    "pediatrics": { 
-      name: "Pediatrics", 
-      icon: "👶", 
+    "pediatrics": {
+      name: "Pediatrics",
+      icon: "👶",
       description: "Healthcare for children and adolescents",
       color: "#50FA7B"
     },
-    "neurology": { 
-      name: "Neurology", 
-      icon: "🧠", 
+    "neurology": {
+      name: "Neurology",
+      icon: "🧠",
       description: "Brain and nervous system specialists",
       color: "#8BE9FD"
     },
-    "oncology": { 
-      name: "Oncology", 
-      icon: "🦠", 
+    "oncology": {
+      name: "Oncology",
+      icon: "🦠",
       description: "Cancer diagnosis and treatment",
       color: "#FFB86C"
     },
-    "orthopedics": { 
-      name: "Orthopedics", 
-      icon: "🦴", 
+    "orthopedics": {
+      name: "Orthopedics",
+      icon: "🦴",
       description: "Bone, joint and muscle specialists",
       color: "#BD93F9"
     },
-    "dentistry": { 
-      name: "Dentistry", 
-      icon: "😁", 
+    "dentistry": {
+      name: "Dentistry",
+      icon: "😁",
       description: "Dental care and oral health specialists",
       color: "#F1FA8C"
     },
   };
 
-  const department = departmentData[id] || { 
-    name: `Department ${id}`, 
-    icon: "🏥", 
+  const department = departmentData[id] || {
+    name: `Department ${id}`,
+    icon: "🏥",
     description: "Specialized medical care",
     color: "#6272A4"
   };
@@ -259,18 +259,18 @@ function Department() {
         <div style={{ ...styles.floatingCircle, ...styles.circle2 }}></div>
         <div style={{ ...styles.floatingCircle, ...styles.circle3 }}></div>
       </div>
-      
+
       <Navbar />
-      
+
       <div style={styles.container}>
-        <button 
+        <button
           style={styles.backButton}
           className="back-button"
           onClick={() => window.history.back()}
         >
           ← Back to Departments
         </button>
-        
+
         <section style={styles.heroSection}>
           <h1 style={styles.title}>
             <span style={styles.departmentIcon}>{department.icon}</span>
@@ -280,57 +280,11 @@ function Department() {
             {department.description}
           </p>
         </section>
-        
-        <div style={styles.featureCard}>
-          <div style={styles.infoGrid}>
-            <div style={styles.infoCard} className="info-card">
-              <h3 style={styles.infoTitle}>Services Offered</h3>
-              <p style={styles.infoText}>
-                Comprehensive diagnostic services, treatment plans, specialized procedures, 
-                and follow-up care tailored to your specific needs.
-              </p>
-            </div>
-            
-            <div style={styles.infoCard} className="info-card">
-              <h3 style={styles.infoTitle}>Operating Hours</h3>
-              <p style={styles.infoText}>
-                Monday - Friday: 8:00 AM - 6:00 PM<br />
-                Saturday: 9:00 AM - 2:00 PM<br />
-                {id === "emergency" ? "Open 24/7" : "Emergency services available 24/7"}
-              </p>
-            </div>
-            
-            <div style={styles.infoCard} className="info-card">
-              <h3 style={styles.infoTitle}>Contact Information</h3>
-              <p style={styles.infoText}>
-                Phone: (555) 123-4567<br />
-                Email: {id}@medverse.hospital<br />
-                Location: Main Building, Floor 3
-              </p>
-            </div>
-          </div>
-          
-          <div style={styles.staffSection}>
-            <h3 style={styles.staffTitle}>Our Specialists</h3>
-            <div style={styles.staffGrid}>
-              <div style={styles.staffCard}>
-                <h4>Dr. Smith</h4>
-                <p>Senior Specialist</p>
-              </div>
-              <div style={styles.staffCard}>
-                <h4>Dr. Johnson</h4>
-                <p>Head of Department</p>
-              </div>
-              <div style={styles.staffCard}>
-                <h4>Dr. Williams</h4>
-                <p>Consultant</p>
-              </div>
-            </div>
-          </div>
-          
-          <h2 style={styles.cardTitle}>How can we assist you today?</h2>
-          <ChatbotPlaceholder label="Department Specialist AI Assistant" />
-        </div>
+
+
+
+        <h2 style={styles.cardTitle}>How can we assist you today?</h2>
+        <MultimodalDoctor departmentId={id} departmentName={department.name} />
       </div>
     </div>
   );
