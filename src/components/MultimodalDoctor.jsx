@@ -3,8 +3,8 @@ import React, { useState, useRef, useEffect } from "react";
 // ─── Constants ────────────────────────────────────────────────────────────────
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_TEXT_MODEL = "llama-3.3-70b-versatile";
-const GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview";
-
+//const GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview";
+const GROQ_VISION_MODEL = "llama-3.2-11b-vision-preview";
 const DEPARTMENT_PROMPTS = {
     emergency: `You are the MedVerse Senior Emergency Physician — a highly experienced ER specialist trained in acute care, trauma, and critical medicine.
 
